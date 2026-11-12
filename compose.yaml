@@ -1,0 +1,60 @@
+services:
+  secret-santa:
+    # Built for linux/amd64 and published by .github/workflows/docker.yml on every push to main.
+    image: ghcr.io/cbellee/secret-santa:latest
+    pull_policy: always
+    restart: unless-stopped
+    init: true
+    # Variables are listed explicitly (not env_file) so the tunnel token never reaches this container.
+    environment:
+      NODE_ENV: production
+      APP_ORIGIN: ${APP_ORIGIN:?Set APP_ORIGIN in .env}
+      GROUP_INVITE_CODE: ${GROUP_INVITE_CODE:?Set GROUP_INVITE_CODE in .env}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
+      FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
+      FACEBOOK_GRAPH_VERSION: ${FACEBOOK_GRAPH_VERSION:-v24.0}
+      DATABASE_PATH: /app/data/santa.sqlite
+      PORT: 3000
+    ports:
+      - "127.0.0.1:3080:3000"
+    volumes:
+      - santa-data:/app/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Outbound-only Cloudflare Tunnel: no router port forwarding or DSM reverse proxy needed.
+  # In the tunnel's published application route, point secret-santa.bellee.net at http://secret-santa:3000
+  # (directly at this service, so the app's single trusted proxy hop is cloudflared).
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?Set CLOUDFLARE_TUNNEL_TOKEN in .env}
+    depends_on:
+      - secret-santa
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  santa-data:
