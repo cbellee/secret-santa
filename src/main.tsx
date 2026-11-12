@@ -175,7 +175,7 @@ function App() {
           <p className="muted">{user.member ? 'What should your group call you?' : 'Tell us what your group calls you, then enter your invitation code.'}</p>
           <form onSubmit={saveProfile}>
             <label htmlFor="short-name">Your short name</label><input id="short-name" autoComplete="nickname" value={name} onChange={event => setName(event.target.value)} maxLength={32} required placeholder="e.g. Chris" disabled={busy} />
-            {!user.member && <><label htmlFor="invite">Group invitation code</label><input id="invite" type="password" autoComplete="off" value={invite} onChange={event => setInvite(event.target.value)} maxLength={200} required disabled={busy} placeholder="Your organiser has this" /></>}
+            {!user.member && <><label htmlFor="invite">Group invitation code</label><input id="invite" className="invite-code" type="text" inputMode="numeric" pattern="[0-9]{6}" title="Enter the 6-digit code from your organiser" autoComplete="off" value={invite} onChange={event => setInvite(event.target.value.replace(/\D/g, '').slice(0, 6))} maxLength={6} required disabled={busy} placeholder="6-digit code" /></>}
             <button className="primary full" disabled={busy}>{busy ? 'Saving...' : user.member ? 'Save name' : 'Join the giving list →'}</button>
             {user.member && <button className="text-button full" type="button" onClick={() => { setEditName(false); setName(user.shortName ?? ''); }}>Cancel</button>}
             <button className="remove-button full" type="button" disabled={busy} onClick={deleteAccount}>Delete my account and wishlist</button>

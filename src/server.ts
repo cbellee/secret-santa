@@ -10,7 +10,7 @@ const env = z.object({
   APP_ORIGIN: z.url(),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   DATABASE_PATH: z.string().default('./data/santa.sqlite'),
-  GROUP_INVITE_CODE: z.string().min(12).max(200),
+  GROUP_INVITE_CODE: z.string().regex(/^\d{6}$/, 'GROUP_INVITE_CODE must be exactly 6 digits, e.g. 482913.'),
   GOOGLE_CLIENT_ID: z.string().default(''),
   GOOGLE_CLIENT_SECRET: z.string().default(''),
   FACEBOOK_CLIENT_ID: z.string().default(''),

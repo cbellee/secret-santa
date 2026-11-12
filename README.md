@@ -25,7 +25,7 @@ npm ci
 cp .env.example .env
 ```
 
-In `.env`, set a **random** `GROUP_INVITE_CODE` of 12–200 characters, e.g. `openssl rand -hex 16`. Don't use a memorable phrase; the server can't check how guessable a code is. Configure social credentials as described below. Keep `.env` private; never commit it.
+In `.env`, set `GROUP_INVITE_CODE` to a **random 6-digit number**, e.g. `python3 -c 'import secrets; print(f"{secrets.randbelow(10**6):06d}")'`. Avoid 123456, birthdays and years. Configure social credentials as described below. Keep `.env` private; never commit it.
 
 Run these in two terminals:
 
@@ -106,7 +106,7 @@ The repository and package are **public**, so the NAS can pull the image without
 
    ```dotenv
    APP_ORIGIN=https://secret-santa.bellee.net
-   GROUP_INVITE_CODE=replace-with-your-random-private-code
+   GROUP_INVITE_CODE=your-random-6-digit-code
    GOOGLE_CLIENT_ID=your-google-client-id
    GOOGLE_CLIENT_SECRET=your-google-client-secret
    FACEBOOK_CLIENT_ID=your-facebook-app-id
@@ -192,7 +192,7 @@ Use this only if you can't use a tunnel. If router port 443 already goes to anot
 
 - Back up the `santa-data` volume. For a consistent filesystem backup, stop this app's container first, back up the entire volume, then start it again. With a live SQLite database, do not copy just `santa.sqlite` while omitting its WAL.
 - Protect backups like the live database; set a retention policy and communicate it to participants. Test a restore into a separate volume before relying on backups.
-- Keep the invite code private and **random** (e.g. `openssl rand -hex 16`), never a guessable phrase. Wrong guesses are limited to 30 per 15 minutes per IP and 10 per hour per signed-in account. Rotating the code prevents new joins with the old code but does **not** remove existing members.
+- The invite code is **6 random digits**; keep it private. Wrong guesses are limited to 30 per 15 minutes per IP and 10 per hour per signed-in account, which makes guessing 1 million combinations impractical for a casual attacker but not impossible for a determined one. Once everyone has joined, change the code and restart (`sudo docker-compose up -d`). Existing members stay members; changing the code only stops new joins with the old one.
 - Short names must be unique within the group (ignoring case, extra spaces and full-width characters) and cannot contain invisible or control characters. Lookalike letters from other alphabets (e.g. Cyrillic "а" vs Latin "a") are not detected.
 - A participant can select **My wishlist → Edit name → Delete my account and wishlist**. This permanently deletes their active profile, gift list and every login session. Non-members can delete from the welcome form. Existing backups may retain data until their retention period ends.
 - There is no administrator UI. If manual member removal is necessary, stop the app, back up the database, and use SQLite to identify the correct user and delete their sessions and user row inside a transaction. Do not identify someone by short name alone; names can be duplicated.

@@ -85,7 +85,8 @@ export function createApp(config: AppConfig, store: Store) {
     if (!user) { res.status(401).json({ error: 'Please sign in first.' }); return; }
     const parsed = z.object({ shortName: nameSchema, inviteCode: z.string().max(200).optional() }).safeParse(req.body);
     if (!parsed.success) { res.status(400).json({ error: parsed.error.issues[0]?.message }); return; }
-    if (!user.member && !timingSafeEqual(Buffer.from(hash(parsed.data.inviteCode ?? '')), Buffer.from(hash(config.inviteCode)))) {
+    const inviteCode = (parsed.data.inviteCode ?? '').replace(/\s/g, '');
+    if (!user.member && !timingSafeEqual(Buffer.from(hash(inviteCode)), Buffer.from(hash(config.inviteCode)))) {
       res.status(403).json({ error: 'That invite code is not correct. Ask your organiser for the group code.' });
       return;
     }

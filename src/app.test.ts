@@ -13,7 +13,7 @@ import type { Member } from './domain.ts';
 
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 const config: AppConfig = {
-  origin: 'http://santa.test', production: false, inviteCode: 'a-private-group-code',
+  origin: 'http://santa.test', production: false, inviteCode: '482913',
   google: { clientId: 'test-google', clientSecret: 'test-secret' },
   facebook: { clientId: 'test-facebook', clientSecret: 'test-secret' }, facebookVersion: 'v24.0',
 };
@@ -57,7 +57,8 @@ test('group data requires OAuth session plus invitation; CSRF and invalid invita
   assert.equal((await request(url, 'members', 'GET', undefined, pending.cookie)).status, 403);
   assert.equal((await request(url, 'profile', 'PUT', { shortName: 'Chris', inviteCode: config.inviteCode }, pending.cookie, 'https://evil.example')).status, 403);
   assert.equal((await request(url, 'profile', 'PUT', { shortName: 'Chris', inviteCode: 'wrong' }, pending.cookie)).status, 403);
-  assert.equal((await request(url, 'profile', 'PUT', { shortName: 'Chris', inviteCode: config.inviteCode }, pending.cookie)).status, 200);
+  assert.equal((await request(url, 'profile', 'PUT', { shortName: 'Chris', inviteCode: '482914' }, pending.cookie)).status, 403);
+  assert.equal((await request(url, 'profile', 'PUT', { shortName: 'Chris', inviteCode: ' 482 913 ' }, pending.cookie)).status, 200);
   assert.equal((await request(url, 'members', 'GET', undefined, pending.cookie)).status, 200);
 });
 
