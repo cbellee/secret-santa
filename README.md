@@ -101,8 +101,8 @@ The repository and package are **public**, so the NAS can pull the image without
 
 ### Running it on the NAS
 
-1. Create a folder such as `/volume1/docker/secret-santa` and copy in **only `compose.yaml`**. The source code isn't needed; the image comes from GHCR.
-2. Create a private `.env` beside `compose.yaml`:
+1. Create a folder such as `/volume1/docker/secret-santa` and copy in **only `docker-compose.yaml`** (Container Manager only recognises this name, not `compose.yaml`). The source code isn't needed; the image comes from GHCR.
+2. Create a private `.env` beside `docker-compose.yaml`:
 
    ```dotenv
    APP_ORIGIN=https://secret-santa.bellee.net
@@ -115,7 +115,7 @@ The repository and package are **public**, so the NAS can pull the image without
    CLOUDFLARE_TUNNEL_TOKEN=your-cloudflare-tunnel-token
    ```
 
-3. In **Container Manager → Project → Create**, select the folder and `compose.yaml`, then start it. Alternatively, over SSH in that folder:
+3. In **Container Manager → Project → Create**, select the folder and `docker-compose.yaml`, then start it. Alternatively, over SSH in that folder:
 
    ```sh
    docker compose up -d
@@ -165,7 +165,7 @@ Consider pinning `cloudflare/cloudflared` to a specific version tag, and update 
 
 Use this only if you can't use a tunnel. If router port 443 already goes to another device (for example for your existing `edge`/`ev` hostnames), this hostname needs to share that device's reverse proxy instead.
 
-1. Remove the `cloudflared` service from `compose.yaml`.
+1. Remove the `cloudflared` service from `docker-compose.yaml`.
 2. In Cloudflare DNS, add `CNAME secret-santa → <your-router>.sn.mynetname.net` (your MikroTik IP Cloud name), with proxy status **DNS only (grey cloud)**. Turning on the orange-cloud proxy here would make the app see Cloudflare's IPs instead of visitors' IPs. That needs a different trust-proxy setting, plus an origin firewall that only accepts Cloudflare.
 3. On the MikroTik, forward WAN TCP 443 (and 80 if Let's Encrypt HTTP validation is used) to the NAS. The default firewall already accepts dst-NAT traffic. Add a hairpin-NAT rule if LAN clients should use the public name:
 
@@ -186,7 +186,7 @@ Use this only if you can't use a tunnel. If router port 443 already goes to anot
 - Short names must be unique within the group (ignoring case, extra spaces and full-width characters) and cannot contain invisible or control characters. Lookalike letters from other alphabets (e.g. Cyrillic "а" vs Latin "a") are not detected.
 - A participant can select **My wishlist → Edit name → Delete my account and wishlist**. This permanently deletes their active profile, gift list and every login session. Non-members can delete from the welcome form. Existing backups may retain data until their retention period ends.
 - There is no administrator UI. If manual member removal is necessary, stop the app, back up the database, and use SQLite to identify the correct user and delete their sessions and user row inside a transaction. Do not identify someone by short name alone; names can be duplicated.
-- Keep DSM, Container Manager and container images patched. Pushing to `main` publishes a fresh image built on the latest Node 24 base. Deploy it with `docker compose pull && docker compose up -d`. To roll back, change the `image:` tag in `compose.yaml` to an earlier `sha-…` tag.
+- Keep DSM, Container Manager and container images patched. Pushing to `main` publishes a fresh image built on the latest Node 24 base. Deploy it with `docker compose pull && docker compose up -d`. To roll back, change the `image:` tag in `docker-compose.yaml` to an earlier `sha-…` tag.
 
 ## Verification boundaries
 
