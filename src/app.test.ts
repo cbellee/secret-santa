@@ -207,6 +207,17 @@ test('wishlists saved before gift cards existed still load, as non-gift-card gif
   assert.deepEqual(store.getUser(alice.id)?.gifts, [{ url: 'https://shop.example/old', priceCents: 1000, description: '', giftCard: false }]);
 });
 
+test('PRIVACY.md on GitHub repeats every paragraph of the served privacy and deletion pages', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { infoPage } = await import('./pages.ts');
+  const markdown = (await readFile(new URL('../PRIVACY.md', import.meta.url), 'utf8')).replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  for (const kind of ['privacy', 'deletion'] as const) {
+    const paragraphs = [...infoPage(kind).matchAll(/<p>([\s\S]*?)<\/p>/g)].map(match => match[1]!.replace(/<[^>]+>/g, ''));
+    assert.ok(paragraphs.length > 0);
+    for (const paragraph of paragraphs) assert.ok(markdown.includes(paragraph), `PRIVACY.md is missing: ${paragraph.slice(0, 60)}...`);
+  }
+});
+
 test('privacy and data-deletion pages are complete HTML that crawlers can read without JavaScript', async t => {
   const { url } = await harness(t);
   for (const [path, phrase] of [['/privacy', 'What this site stores'], ['/data-deletion', 'Remove your profile and wishlist']] as const) {
