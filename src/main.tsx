@@ -4,11 +4,11 @@ import { nameSchema, priceToCents, wishlistSchema } from './domain.ts';
 import type { CurrentUser, Gift, Member, SessionInfo } from './domain.ts';
 import './styles.css';
 
-type Draft = { key: string; url: string; price: string; description: string };
+type Draft = { key: string; url: string; price: string; description: string; giftCard: boolean };
 const money = new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' });
 const draftGift = (gift?: Gift): Draft => ({
   key: crypto.randomUUID(), url: gift?.url ?? '',
-  price: gift ? (gift.priceCents / 100).toFixed(2) : '', description: gift?.description ?? '',
+  price: gift ? (gift.priceCents / 100).toFixed(2) : '', description: gift?.description ?? '', giftCard: gift?.giftCard ?? false,
 });
 async function api<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
   const response = await fetch(`/api/${path}`, {
@@ -99,7 +99,7 @@ function App() {
   function save() {
     void perform(async () => {
       const parsed = wishlistSchema.safeParse(drafts.map(gift => ({
-        url: gift.url, priceCents: priceToCents(gift.price), description: gift.description,
+        url: gift.url, priceCents: priceToCents(gift.price), description: gift.description, giftCard: gift.giftCard,
       })));
       if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? 'Please check your gifts.');
       const result = await api<{ user: CurrentUser }>('wishlist', 'PUT', parsed.data);
@@ -192,8 +192,9 @@ function App() {
               <div className="gift-list">{drafts.map((gift, index) => <article className="gift-editor panel" key={gift.key}>
                 <div className="rank-column"><span className={`rank rank-${index}`}>{index + 1}</span><span className="rank-label">{index === 0 ? 'TOP WISH' : 'NEXT WISH'}</span><div className="rank-controls"><button type="button" title="Move higher" aria-label={`Move gift ${index + 1} higher`} disabled={busy || index === 0} onClick={() => move(index, -1)}>↑</button><button type="button" title="Move lower" aria-label={`Move gift ${index + 1} lower`} disabled={busy || index === drafts.length - 1} onClick={() => move(index, 1)}>↓</button></div></div>
                 <fieldset disabled={busy}><legend className="sr-only">Gift {index + 1}</legend>
-                  <div className="gift-fields"><div className="url-field"><label htmlFor={`url-${gift.key}`}>Gift link</label><input id={`url-${gift.key}`} type="url" required maxLength={2048} placeholder="https://shop.com/something-lovely" value={gift.url} onChange={event => changeDraft(index, { url: event.target.value })} /></div><div><label htmlFor={`price-${gift.key}`}>Price (AUD)</label><div className="price-input"><span>$</span><input id={`price-${gift.key}`} type="number" step="0.01" min="0.01" max="50" required placeholder="0.00" value={gift.price} onChange={event => changeDraft(index, { price: event.target.value })} /></div></div></div>
-                  <label htmlFor={`description-${gift.key}`}>A little detail <span className="optional">(optional)</span></label><textarea id={`description-${gift.key}`} maxLength={300} rows={2} placeholder="A colour, a size, or why this caught your eye..." value={gift.description} onChange={event => changeDraft(index, { description: event.target.value })} />
+                  <label className="gift-card-toggle"><input type="checkbox" checked={gift.giftCard} onChange={event => changeDraft(index, { giftCard: event.target.checked })} />Gift card <span className="optional">(no link needed)</span></label>
+                  <div className="gift-fields"><div className="url-field"><label htmlFor={`url-${gift.key}`}>{gift.giftCard ? <>Gift card link <span className="optional">(optional)</span></> : 'Gift link'}</label><input id={`url-${gift.key}`} type="url" required={!gift.giftCard} maxLength={2048} placeholder={gift.giftCard ? 'https://shop.com/gift-cards' : 'https://shop.com/something-lovely'} value={gift.url} onChange={event => changeDraft(index, { url: event.target.value })} /></div><div><label htmlFor={`price-${gift.key}`}>{gift.giftCard ? 'Value (AUD)' : 'Price (AUD)'}</label><div className="price-input"><span>$</span><input id={`price-${gift.key}`} type="number" step="0.01" min="0.01" max="50" required placeholder="0.00" value={gift.price} onChange={event => changeDraft(index, { price: event.target.value })} /></div></div></div>
+                  <label htmlFor={`description-${gift.key}`}>A little detail <span className="optional">(optional)</span></label><textarea id={`description-${gift.key}`} maxLength={300} rows={2} placeholder={gift.giftCard ? 'Which store? e.g. Bunnings, JB Hi-Fi, Kmart...' : 'A colour, a size, or why this caught your eye...'} value={gift.description} onChange={event => changeDraft(index, { description: event.target.value })} />
                   <div className="gift-bottom"><span>{gift.description.length}/300</span><button className="remove-button" type="button" onClick={() => { setDrafts(previous => previous.filter((_, i) => i !== index)); setDirty(true); setNotice(''); }}>Remove gift</button></div>
                 </fieldset>
               </article>)}</div>
@@ -202,7 +203,7 @@ function App() {
             </form>
           </div> : <div role="tabpanel" id="group-panel" aria-labelledby="group-tab" className="member-grid">{members.map(member => <article className="panel member-card" key={member.id}>
             <div className="member-title"><span className="avatar">{member.shortName.slice(0, 1).toUpperCase()}</span><h2>{member.shortName}{member.id === user.id && <span className="you-label">YOU</span>}</h2><span className="muted">{member.gifts.length}/3</span></div>
-            {member.gifts.length ? <ol className="member-gifts">{member.gifts.map((gift, index) => <li key={gift.url}><span className="mini-rank">{index + 1}</span><div><a href={gift.url} target="_blank" rel="noopener noreferrer">{new URL(gift.url).hostname}<span aria-hidden="true"> ↗</span></a>{gift.description && <p>{gift.description}</p>}<strong className="gift-price">{money.format(gift.priceCents / 100)}</strong></div></li>)}</ol> : <p className="empty-wishes">Still dreaming up their wishlist.<br />Check back for a little inspiration.</p>}
+            {member.gifts.length ? <ol className="member-gifts">{member.gifts.map((gift, index) => <li key={index}><span className="mini-rank">{index + 1}</span><div>{gift.giftCard && <span className="gift-card-badge">Gift card</span>}{gift.url && <a href={gift.url} target="_blank" rel="noopener noreferrer">{new URL(gift.url).hostname}<span aria-hidden="true"> ↗</span></a>}{gift.description && <p>{gift.description}</p>}<strong className="gift-price">{money.format(gift.priceCents / 100)}</strong></div></li>)}</ol> : <p className="empty-wishes">Still dreaming up their wishlist.<br />Check back for a little inspiration.</p>}
           </article>)}</div>}
           <aside className="gentle-reminder"><span aria-hidden="true">✧</span><div><strong>It's the thought that counts.</strong><p>A wishlist is a little nudge, not a shopping order. The best part is giving.</p></div></aside>
         </section>}

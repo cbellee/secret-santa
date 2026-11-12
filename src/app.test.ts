@@ -66,8 +66,8 @@ test('persist ranked gifts, enforce limits server-side, isolate edits and revoke
   const alice = login('Alice');
   const bob = login('Bob');
   const gifts = [
-    { url: 'https://shop.example/second', priceCents: 5000, description: 'My first choice' },
-    { url: 'https://shop.example/first', priceCents: 4999, description: '' },
+    { url: 'https://shop.example/second', priceCents: 5000, description: 'My first choice', giftCard: false },
+    { url: '', priceCents: 4999, description: 'Bunnings', giftCard: true },
   ];
   assert.equal((await request(url, 'wishlist', 'PUT', gifts, alice.cookie)).status, 200);
   for (const invalid of [[{ ...gifts[0], priceCents: 5001 }], [gifts[0], gifts[0]], [...gifts, ...gifts]]) {
@@ -199,6 +199,14 @@ test('wrong invite codes are limited per account, independent of IP', async t =>
   assert.equal((await request(url, 'profile', 'PUT', { shortName: 'Other', inviteCode: config.inviteCode }, other.cookie)).status, 200);
 });
 
+test('wishlists saved before gift cards existed still load, as non-gift-card gifts', async t => {
+  const { store, login } = await harness(t);
+  const alice = login('Alice');
+  store.db.prepare('UPDATE users SET gifts = ? WHERE id = ?')
+    .run(JSON.stringify([{ url: 'https://shop.example/old', priceCents: 1000, description: '' }]), alice.id);
+  assert.deepEqual(store.getUser(alice.id)?.gifts, [{ url: 'https://shop.example/old', priceCents: 1000, description: '', giftCard: false }]);
+});
+
 test('privacy and data-deletion pages are complete HTML that crawlers can read without JavaScript', async t => {
   const { url } = await harness(t);
   for (const [path, phrase] of [['/privacy', 'What this site stores'], ['/data-deletion', 'Remove your profile and wishlist']] as const) {
@@ -215,7 +223,7 @@ test('account deletion removes wishes and all sessions without affecting other m
   const { url, store, login } = await harness(t);
   const alice = login('Alice');
   const bob = login('Bob');
-  store.saveGifts(alice.id, [{ url: 'https://shop.example/gift', priceCents: 5000, description: '' }]);
+  store.saveGifts(alice.id, [{ url: 'https://shop.example/gift', priceCents: 5000, description: '', giftCard: false }]);
   store.db.prepare('INSERT INTO sessions VALUES (?, ?, ?)').run(digest('another-alice-session'), alice.id, Date.now() + 60_000);
   assert.equal((await request(url, 'account', 'DELETE', undefined, alice.cookie, 'https://evil.example')).status, 403);
   assert.equal((await request(url, 'account', 'DELETE', undefined, alice.cookie)).status, 200);

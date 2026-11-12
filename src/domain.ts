@@ -10,6 +10,7 @@ export function nameKey(name: string): string {
 }
 
 const giftUrl = z.string().trim().max(2048).transform((value, ctx) => {
+  if (value === '') return '';
   try {
     const url = new URL(value);
     if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) {
@@ -28,11 +29,18 @@ export const giftSchema = z.object({
   url: giftUrl,
   priceCents: z.number().int().min(1, 'Enter a price above $0.').max(5000, 'Each gift must cost AUD $50 or less.'),
   description: z.string().trim().max(300, 'Keep descriptions to 300 characters.'),
+  // Defaults to false so wishlists saved before gift cards existed still parse.
+  giftCard: z.boolean().default(false),
+}).superRefine((gift, ctx) => {
+  if (!gift.giftCard && !gift.url) {
+    ctx.addIssue({ code: 'custom', path: ['url'], message: 'Please enter a gift URL, or tick "Gift card".' });
+  }
 });
 
 export const wishlistSchema = z.array(giftSchema).max(3, 'You can add up to three gifts.').superRefine((gifts, ctx) => {
   const seen = new Set<string>();
   gifts.forEach((gift, index) => {
+    if (!gift.url) return;
     if (seen.has(gift.url)) {
       ctx.addIssue({ code: 'custom', path: [index, 'url'], message: 'Each gift must have a different URL.' });
     }

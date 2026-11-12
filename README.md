@@ -4,7 +4,7 @@ A small, invite-only Secret Santa wishlist for **https://secret-santa.bellee.net
 
 - Google and Facebook sign-in only; no passwords or email sign-up.
 - One private group, protected by an invitation code.
-- A short name and up to three distinct gift links per person.
+- A short name and up to three gifts per person: distinct gift links, or gift cards (link optional).
 - **AUD $50 maximum per gift**, not $50 across all three. Prices are entered manually; the app does not fetch shops or verify current prices.
 - Optional descriptions, with up/down controls for preference. Number 1 is most wanted.
 - Group members can view each other's saved wishlists. This app does not draw Secret Santa assignments or track purchases.

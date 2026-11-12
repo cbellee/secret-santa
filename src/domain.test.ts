@@ -21,6 +21,16 @@ test('wishlists allow zero to three distinct links and preserve preference order
   assert.equal(wishlistSchema.safeParse([gift('https://SHOP.example:443/a#one'), gift('https://shop.example/a#two')]).success, false);
 });
 
+test('gift cards may leave the link blank; ordinary gifts may not', () => {
+  const card = { url: '', priceCents: 5000, description: 'Bunnings', giftCard: true };
+  assert.equal(wishlistSchema.safeParse([card, { ...card, description: 'JB Hi-Fi' }]).success, true);
+  assert.equal(wishlistSchema.safeParse([{ ...card, giftCard: false }]).success, false);
+  assert.equal(wishlistSchema.safeParse([{ ...card, priceCents: 5001 }]).success, false);
+  assert.equal(wishlistSchema.parse([{ ...card, url: 'https://shop.example/cards' }])[0]?.url, 'https://shop.example/cards');
+  assert.equal(wishlistSchema.safeParse([{ ...card, url: 'javascript:alert(1)' }]).success, false);
+  assert.equal(wishlistSchema.parse([gift()])[0]?.giftCard, false);
+});
+
 test('reject unsafe links, excessive details and blank names', () => {
   for (const url of ['javascript:alert(1)', 'data:text/html,test', 'https://user:password@shop.example', 'not-a-link']) {
     assert.equal(wishlistSchema.safeParse([gift(url)]).success, false);
