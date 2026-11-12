@@ -118,12 +118,22 @@ The repository and package are **public**, so the NAS can pull the image without
 3. In **Container Manager → Project → Create**, select the folder and `docker-compose.yaml`, then start it. Alternatively, over SSH in that folder:
 
    ```sh
-   docker compose up -d
-   docker compose ps
-   docker compose logs --tail=50 secret-santa
+   docker-compose up -d
+   docker-compose ps
+   docker-compose logs --tail=50 secret-santa
    ```
 
-   To deploy a new version after a push has finished building: `docker compose pull && docker compose up -d`. In Container Manager, use **Project → Action → Build**, which re-pulls because of `pull_policy: always`.
+   Synology ships Compose as the standalone `docker-compose` command, and Docker commands need `sudo` over SSH.
+
+   To deploy a new version after a push has finished building:
+
+   ```sh
+   sudo docker-compose pull && sudo docker-compose up -d
+   # Confirm the running commit (matches the short SHA shown in GitHub):
+   sudo docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' $(sudo docker-compose ps -q secret-santa)
+   ```
+
+   In Container Manager, update the image under **Image** (**Update** when it shows "Update available"). Then use **Project → Action → Stop**, followed by **Build**.
 
 4. Check the internal listener from the NAS:
 
@@ -133,7 +143,7 @@ The repository and package are **public**, so the NAS can pull the image without
 
    It should return an anonymous session and configured provider availability.
 
-The container runs as an unprivileged user with a read-only root filesystem. SQLite lives in the persistent **`santa-data` named volume**, mounted at `/app/data`. Container recreation and normal `docker compose down` preserve it. **Do not run `docker compose down -v` or delete that volume** unless you intend to erase profiles and wishlists.
+The container runs as an unprivileged user with a read-only root filesystem. SQLite lives in the persistent **`santa-data` named volume**, mounted at `/app/data`. Container recreation and normal `docker-compose down` preserve it. **Do not run `docker-compose down -v` or delete that volume** unless you intend to erase profiles and wishlists.
 
 ### Public access via Cloudflare Tunnel (recommended)
 
@@ -148,7 +158,7 @@ The container runs as an unprivileged user with a read-only root filesystem. SQL
    Don't use **Networking → Routes → Tunnel Hostname**; that type is for private hostnames, not a public website.
 
    Cloudflare creates the proxied DNS record `secret-santa.bellee.net` → `<tunnel-id>.cfargotunnel.com` automatically. Don't create it by hand, and don't add an A record for the same name.
-4. Start or restart the project (`docker compose up -d`), then check `docker compose logs --tail=50 cloudflared` for `Registered tunnel connection`.
+4. Start or restart the project (`docker-compose up -d`), then check `docker-compose logs --tail=50 cloudflared` for `Registered tunnel connection`.
 5. In the `bellee.net` zone:
    - **SSL/TLS → Edge Certificates:** turn on **Always Use HTTPS**; set Minimum TLS to 1.2.
    - **Speed → Optimization:** keep **Rocket Loader off**. It rewrites scripts, which the app's Content-Security-Policy blocks.
@@ -186,7 +196,7 @@ Use this only if you can't use a tunnel. If router port 443 already goes to anot
 - Short names must be unique within the group (ignoring case, extra spaces and full-width characters) and cannot contain invisible or control characters. Lookalike letters from other alphabets (e.g. Cyrillic "а" vs Latin "a") are not detected.
 - A participant can select **My wishlist → Edit name → Delete my account and wishlist**. This permanently deletes their active profile, gift list and every login session. Non-members can delete from the welcome form. Existing backups may retain data until their retention period ends.
 - There is no administrator UI. If manual member removal is necessary, stop the app, back up the database, and use SQLite to identify the correct user and delete their sessions and user row inside a transaction. Do not identify someone by short name alone; names can be duplicated.
-- Keep DSM, Container Manager and container images patched. Pushing to `main` publishes a fresh image built on the latest Node 24 base. Deploy it with `docker compose pull && docker compose up -d`. To roll back, change the `image:` tag in `docker-compose.yaml` to an earlier `sha-…` tag.
+- Keep DSM, Container Manager and container images patched. Pushing to `main` publishes a fresh image built on the latest Node 24 base. Deploy it with `docker-compose pull && docker-compose up -d`. To roll back, change the `image:` tag in `docker-compose.yaml` to an earlier `sha-…` tag.
 
 ## Verification boundaries
 
