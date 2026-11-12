@@ -97,10 +97,7 @@ Requires an x86-64 NAS that supports Container Manager / Docker. No cloud hostin
 
 Pull requests are built and tested but not published. The workflow uses the built-in `GITHUB_TOKEN`, so no repository secrets are needed.
 
-The package is **private** because the repository is private, so the NAS must log in to pull it. Create a GitHub personal access token (classic) with only the **`read:packages`** scope. Then either:
-
-- In **Container Manager → Registry → Settings → Add**, add `https://ghcr.io` with username `cbellee` and the token as the password, or
-- Over SSH: `echo <token> | docker login ghcr.io -u cbellee --password-stdin`.
+The repository and package are **public**, so the NAS can pull the image without logging in to GitHub.
 
 ### Running it on the NAS
 
